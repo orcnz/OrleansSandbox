@@ -1,21 +1,25 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+﻿using System.Net;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using OrleansGrainInterfaces;
 
-var builder = new HostBuilder()
+var builder = Host.CreateDefaultBuilder(args)
     .UseOrleansClient(client =>
     {
-        client.UseLocalhostClustering();
+        client.UseStaticClustering(new IPEndPoint(IPAddress.Loopback, 30000));
+
+        //client.UseStaticClustering(
+        //    new IPEndPoint(IPAddress.Loopback, 30000),
+        //    new IPEndPoint(IPAddress.Loopback, 30001),
+        //    new IPEndPoint(IPAddress.Loopback, 30002));
     })
     .ConfigureLogging(logging => logging.AddConsole());
 
 var host = builder.Build();
-
 await host.StartAsync();
 
 var client = host.Services.GetRequiredService<IClusterClient>();
-
 while (true)
 {
     Console.Write("Enter greeting: ");

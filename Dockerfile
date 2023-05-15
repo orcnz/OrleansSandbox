@@ -17,7 +17,7 @@ RUN dotnet publish OrleansServer/ --use-current-runtime --self-contained false -
 
 
 # final stage/image
-FROM mcr.microsoft.com/dotnet/runtime:7.0
+FROM mcr.microsoft.com/dotnet/aspnet:7.0
 WORKDIR /app
 COPY --from=build /app .
 ENTRYPOINT ["dotnet", "OrleansServer.dll"]

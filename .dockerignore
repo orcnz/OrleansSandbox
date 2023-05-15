@@ -10,3 +10,4 @@
 **/.dockerignore
 **/*.md
 **/*.user
+**/launchSettings.json

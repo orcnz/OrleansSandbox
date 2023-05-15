@@ -1,47 +1,29 @@
-﻿using System.Net;
-using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
+﻿using System.Diagnostics;
 using Orleans.Configuration;
 
-var builder = new HostBuilder()
-    .UseOrleans(silo =>
+await Host.CreateDefaultBuilder(args)
+    .UseOrleans((context, silo) =>
     {
         if (Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER") == "true")
         {
-            silo.UseLocalhostClustering()
-                .Configure<EndpointOptions>(options =>
-                {
-                    options.GatewayListeningEndpoint = GetGatewayListeningEndpoint();
-                })
+            var redisConnectionString = context.Configuration["Redis:ConnectionString"] ?? "localhost";
+            var orleansGatewayPort = int.Parse(context.Configuration["Orleans:GatewayPort"] ?? "30000");
+
+            Debug.WriteLine($"Redis connection-string: {redisConnectionString}");
+            Debug.WriteLine($"Orleans gateway port: {orleansGatewayPort}");
+
+            silo
+                .UseRedisClustering(redisConnectionString)
+                .UseDashboard()
+                .Configure<EndpointOptions>(options => options.GatewayPort = orleansGatewayPort)
                 .ConfigureLogging(logger => logger.AddConsole());
         }
         else
         {
-            silo.UseLocalhostClustering()
+            silo
+                .UseLocalhostClustering()
+                .UseDashboard()
                 .ConfigureLogging(logger => logger.AddConsole());
         }
-    });
-
-var host = builder.Build();
-
-if (Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER") == "true")
-{
-    await host.RunAsync();
-}
-else
-{
-    await host.StartAsync();
-
-    Console.WriteLine("Silo running, press any key to terminate...");
-    Console.ReadKey(true);
-
-    await host.StopAsync();
-}
-
-static IPEndPoint GetGatewayListeningEndpoint(int port = 30000)
-{
-    // Find the host IP address in the container, probably "172.72.0.2" for docker.
-    var host = Dns.GetHostEntry(Dns.GetHostName());
-    var address = host.AddressList.Single();
-    return new IPEndPoint(address, port);
-}
+    })
+    .RunConsoleAsync();
