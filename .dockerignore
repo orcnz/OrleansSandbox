@@ -1,0 +1,12 @@
+# Folders
+**/.git
+**/.gitignore
+**/.vs
+**/bin
+**/obj
+
+# Files
+**/Dockerfile*
+**/.dockerignore
+**/*.md
+**/*.user
