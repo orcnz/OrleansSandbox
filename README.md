@@ -86,3 +86,31 @@ orleanssandbox-silo2-1  |          at Orleans.Networking.Shared.SocketConnection
 orleanssandbox-silo2-1  |          at Orleans.Runtime.Messaging.ConnectionFactory.ConnectAsync(SiloAddress address, CancellationToken cancellationToken) in /_/src/Orleans.Core/Networking/ConnectionFactory.cs:line 61
 orleanssandbox-silo2-1  |          at Orleans.Runtime.Messaging.ConnectionManager.ConnectAsync(SiloAddress address, ConnectionEntry entry) in /_/src/Orleans.Core/Networking/ConnectionManager.cs:line 193
 ```
+
+### Work around
+
+The only way I have been successful at working around this issue is to set the gateway port number on each silo node to be different. This is done by adding an environment variable to the `docker-compose.yml` file that matches the port mapping.
+
+
+```yml
+  silo2:
+    build: .
+    ports:
+      - "8081:8080"
+      - "30001:30001" # <-- Map the same external to internal port
+    environment:
+      - Redis:ConnectionString=redis:6379
+	  - Orleans:GatewayPort=30001 # <-- Set the same port number here
+```
+
+```csharp
+	.Configure<EndpointOptions>(options =>
+	{
+		// Configure the gateway listening endpoint with the given port number
+		
+		var address = Dns.GetHostAddresses(Dns.GetHostName()).Single();
+		var port = int.Parse(context.Configuration["Orleans:GatewayPort"] ?? "30000");
+
+		options.GatewayListeningEndpoint = new IPEndPoint(address, port);
+	})
+```
